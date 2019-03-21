@@ -11,6 +11,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageTags>MiniProfiler Initialization</PackageTags>
     <Version>1.0.1</Version>
+    <PackageId>MiniProfilerDb.Initialization</PackageId>
   </PropertyGroup>
 
   <ItemGroup>
