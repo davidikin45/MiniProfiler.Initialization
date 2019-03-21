@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>David Ikin</Authors>
+    <Description>Allow MiniProfiler to be initialized &amp; destroyed independently in a similar manner to how EF Core initialization works.</Description>
+    <Copyright>(c) David Ikin</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/davidikin45/MiniProfiler.Initialization</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/davidikin45/MiniProfiler.Initialization</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>MiniProfiler Initialization</PackageTags>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
