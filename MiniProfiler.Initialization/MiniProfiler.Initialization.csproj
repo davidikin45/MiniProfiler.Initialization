@@ -6,16 +6,17 @@
     <Description>Allow MiniProfiler to be initialized &amp; destroyed independently in a similar manner to how EF Core initialization works.</Description>
     <Copyright>(c) David Ikin</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/davidikin45/MiniProfiler.Initialization</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/davidikin45/MiniProfiler.Initialization</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/davidikin45/MiniProfilerDb.Initialization</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/davidikin45/MiniProfilerDb.Initialization</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>MiniProfiler Initialization</PackageTags>
-    <Version>1.0.1</Version>
+    <Version>1.0.3</Version>
     <PackageId>MiniProfilerDb.Initialization</PackageId>
+    <Product>MiniProfilerDb.Initialization</Product>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Database.Initialization" Version="1.0.4" />
+    <PackageReference Include="Database.Initialization" Version="1.0.9" />
     <PackageReference Include="MiniProfiler.Providers.Sqlite" Version="4.0.165" />
     <PackageReference Include="MiniProfiler.Providers.SqlServer" Version="4.0.165" />
   </ItemGroup>

@@ -12,7 +12,7 @@ namespace MiniProfiler.Initialization
 {
     public static class MiniProfilerInitializer
     {
-        public static List<(string Schema, string Table)> TableNames => new List<(string Schema, string Table)>() {
+        public static List<(string Schema, string TableName)> Tables => new List<(string Schema, string TableName)>() {
             ("dbo", "MiniProfilerClientTimings"),
             ("dbo", "MiniProfilers"),
             ("dbo", "MiniProfilerTimings")
@@ -31,7 +31,7 @@ namespace MiniProfiler.Initialization
 
                 if (dbExists)
                 {
-                    var persistedTables = await DbInitializer.TableNamesAsync(connectionString, cancellationToken).ConfigureAwait(false);
+                    var persistedTables = await DbInitializer.TablesAsync(connectionString, cancellationToken).ConfigureAwait(false);
 
                     using (var conn = new SqliteConnection(connectionString))
                     {
@@ -39,7 +39,7 @@ namespace MiniProfiler.Initialization
 
                         using (SqliteTransaction transaction = conn.BeginTransaction())
                         {
-                            var deleteTables = TableNames.Where(x => persistedTables.Contains(x.Table));
+                            var deleteTables = Tables.Where(x => persistedTables.Any(p => (p.TableName == x.TableName || p.TableName == $"{x.Schema}.{x.TableName}") && (p.Schema == x.Schema || string.IsNullOrEmpty(p.Schema))));
 
                             //Drop tables
                             foreach (var tableName in deleteTables)
@@ -48,7 +48,7 @@ namespace MiniProfiler.Initialization
                                 {
                                     try
                                     {
-                                        var commandSql = $"DROP TABLE [{t.Schema}.{t.Table}];";
+                                        var commandSql = $"DROP TABLE [{t.TableName}];";
                                         using (var command = new SqliteCommand(commandSql, conn, transaction))
                                         {
                                             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -91,7 +91,7 @@ namespace MiniProfiler.Initialization
 
                 if (dbExists)
                 {
-                    var persistedTables = await DbInitializer.TableNamesAsync(connectionString, cancellationToken).ConfigureAwait(false);
+                    var persistedTables = await DbInitializer.TablesAsync(connectionString, cancellationToken).ConfigureAwait(false);
 
                     using (var conn = new SqlConnection(connectionString))
                     {
@@ -99,7 +99,7 @@ namespace MiniProfiler.Initialization
 
                         using (SqlTransaction transaction = conn.BeginTransaction())
                         {
-                            var deleteTables = TableNames.Where(x => persistedTables.Contains(x.Table));
+                            var deleteTables = Tables.Where(x => persistedTables.Any(p => p.TableName == x.TableName && p.Schema == x.Schema));
 
                             //Drop tables
                             foreach (var tableName in deleteTables)
@@ -108,7 +108,7 @@ namespace MiniProfiler.Initialization
                                 {
                                     try
                                     {
-                                        var commandSql = $"DROP TABLE [{t.Schema}].[{t.Table}]";
+                                        var commandSql = $"DROP TABLE [{t.Schema}].[{t.TableName}]";
                                         using (var command = new SqlCommand(commandSql, conn, transaction))
                                         {
                                             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -161,7 +161,7 @@ namespace MiniProfiler.Initialization
             }
             else if (ConnectionStringHelper.IsSQLite(connectionString))
             {
-                var persistedTables = await DbInitializer.TableNamesAsync(connectionString, cancellationToken).ConfigureAwait(false);
+                var persistedTables = await DbInitializer.TablesAsync(connectionString, cancellationToken).ConfigureAwait(false);
 
                 var storage = new SqliteStorage("");
                 var sqlScripts = storage.TableCreationScripts;
@@ -173,7 +173,7 @@ namespace MiniProfiler.Initialization
 
                     using (SqliteTransaction transaction = conn.BeginTransaction())
                     {
-                        foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table))))
+                        foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table.TableName))))
                         {
                             using (var command = new SqliteCommand(commandSql, conn, transaction))
                             {
@@ -190,6 +190,8 @@ namespace MiniProfiler.Initialization
             }
             else
             {
+                var persistedTables = await DbInitializer.TablesAsync(connectionString, cancellationToken).ConfigureAwait(false);
+
                 var storage = new SqlServerStorage("");
                 var sqlScripts = storage.TableCreationScripts;
                 bool created = false;
@@ -201,25 +203,19 @@ namespace MiniProfiler.Initialization
 
                     using (SqlTransaction transaction = conn.BeginTransaction())
                     {
-                        foreach (var commandSql in sqlScripts)
+                        foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table.TableName))))
                         {
-                            try
+                            using (var command = new SqlCommand(commandSql, conn, transaction))
                             {
-                                using (var command = new SqlCommand(commandSql, conn, transaction))
-                                {
-                                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                                }
-                                created = true;
+                                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
                             }
-                            catch
-                            {
-
-                            }
+                            created = true;
                         }
 
                         transaction.Commit();
                     }
                 }
+
                 return created;
             }
         }
