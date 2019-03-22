@@ -37,33 +37,13 @@ namespace MiniProfiler.Initialization
                     {
                         await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-                        using (SqliteTransaction transaction = conn.BeginTransaction())
+                        var deleteTables = Tables.Where(x => persistedTables.Any(p => (p.TableName == x.TableName || p.TableName == $"{x.Schema}.{x.TableName}") && (p.Schema == x.Schema || string.IsNullOrEmpty(p.Schema))));
+
+                        //Drop tables
+                        foreach (var tableName in deleteTables)
                         {
-                            var deleteTables = Tables.Where(x => persistedTables.Any(p => (p.TableName == x.TableName || p.TableName == $"{x.Schema}.{x.TableName}") && (p.Schema == x.Schema || string.IsNullOrEmpty(p.Schema))));
-
-                            //Drop tables
-                            foreach (var tableName in deleteTables)
-                            {
-                                foreach (var t in deleteTables)
-                                {
-                                    try
-                                    {
-                                        var commandSql = $"DROP TABLE [{t.TableName}];";
-                                        using (var command = new SqliteCommand(commandSql, conn, transaction))
-                                        {
-                                            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                                        }
-
-                                        commands.Add(commandSql);
-                                    }
-                                    catch
-                                    {
-
-                                    }
-                                }
-                            }
-
-                            transaction.Rollback();
+                            var commandSql = $"DROP TABLE [{tableName.TableName}];";
+                            commands.Add(commandSql);
                         }
 
                         using (SqliteTransaction transaction = conn.BeginTransaction())
@@ -97,33 +77,14 @@ namespace MiniProfiler.Initialization
                     {
                         await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-                        using (SqlTransaction transaction = conn.BeginTransaction())
+                        var deleteTables = Tables.Where(x => persistedTables.Any(p => p.TableName == x.TableName && p.Schema == x.Schema));
+
+                        //Drop tables
+                        foreach (var tableName in deleteTables)
                         {
-                            var deleteTables = Tables.Where(x => persistedTables.Any(p => p.TableName == x.TableName && p.Schema == x.Schema));
+                            var commandSql = $"DROP TABLE [{tableName.Schema}].[{tableName.TableName}]";
 
-                            //Drop tables
-                            foreach (var tableName in deleteTables)
-                            {
-                                foreach (var t in deleteTables)
-                                {
-                                    try
-                                    {
-                                        var commandSql = $"DROP TABLE [{t.Schema}].[{t.TableName}]";
-                                        using (var command = new SqlCommand(commandSql, conn, transaction))
-                                        {
-                                            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
-                                        }
-
-                                        commands.Add(commandSql);
-                                    }
-                                    catch
-                                    {
-
-                                    }
-                                }
-                            }
-
-                            transaction.Rollback();
+                            commands.Add(commandSql);
                         }
 
                         using (SqlTransaction transaction = conn.BeginTransaction())
