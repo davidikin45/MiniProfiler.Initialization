@@ -1,8 +1,8 @@
-# MiniProfiler Initialization for SQL Server and SQLite
+# MiniProfiler Initialization for SQL Server, SQLite and SQLite InMemory
 
 * [MiniProfiler ASP.NET Core](https://miniprofiler.com/dotnet/AspDotNetCore)
 * I have created the following extension methods which aims to allow MiniProfiler to be initialized & destroyed independently in a similar manner to how EF Core initialization works. A key addition is the ability to create a new database if it doesn't already exist.
-* Supports SQL Server and SQLite connection strings.
+* Supports SQL Server, SQLite and SQLite InMemory.
 
 ## Nuget packages
 * MiniProfiler.AspNetCore.Mvc
