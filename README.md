@@ -1,9 +1,21 @@
 # MiniProfiler Initialization for SQL Server, SQLite and SQLite InMemory
-[![nuget](https://img.shields.io/nuget/v/MiniProfilerDb.Initialization.svg)](https://www.nuget.org/packages/MiniProfilerDb.Initialization/)
+[![nuget](https://img.shields.io/nuget/v/MiniProfilerDb.Initialization.svg)](https://www.nuget.org/packages/MiniProfilerDb.Initialization/) ![Downloads](https://img.shields.io/nuget/dt/MiniProfilerDb.Initialization.svg "Downloads")
 
 * [MiniProfiler ASP.NET Core](https://miniprofiler.com/dotnet/AspDotNetCore)
 * I have created the following extension methods which aims to allow MiniProfiler to be initialized & destroyed independently in a similar manner to how EF Core initialization works. A key addition is the ability to create a new database if it doesn't already exist.
 * Supports SQL Server, SQLite and SQLite InMemory.
+
+## Installation
+
+### NuGet
+```
+PM> Install-Package MiniProfilerDb.Initialization
+```
+
+### .Net CLI
+```
+> dotnet add package MiniProfilerDb.Initialization
+```
 
 ## Nuget packages
 * MiniProfiler.AspNetCore.Mvc
