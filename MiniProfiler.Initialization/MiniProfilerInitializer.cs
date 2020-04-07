@@ -35,7 +35,7 @@ namespace MiniProfiler.Initialization
             }
             else
             {
-                using (var connection = new SqlConnection(connectionString))
+                using (var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
                 {
                     return await EnsureDbAndTablesCreatedAsync(connection, cancellationToken);
                 }
@@ -87,15 +87,14 @@ namespace MiniProfiler.Initialization
 
                 return created;
             }
-            else if (existingConnection is SqlConnection)
+            else if (existingConnection is Microsoft.Data.SqlClient.SqlConnection || existingConnection is System.Data.SqlClient.SqlConnection)
             {
-                await EnsureDbCreatedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
+                var created = await EnsureDbCreatedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
 
                 var persistedTables = await DbInitializer.TablesAsync(existingConnection, cancellationToken).ConfigureAwait(false);
 
                 var storage = new SqlServerStorage("");
                 var sqlScripts = storage.TableCreationScripts;
-                bool created = false;
 
                 //Initialize Schema
                 var opened = false;
@@ -107,18 +106,37 @@ namespace MiniProfiler.Initialization
 
                 try
                 {
-                    using (SqlTransaction transaction = ((SqlConnection)existingConnection).BeginTransaction())
+                    if (existingConnection is Microsoft.Data.SqlClient.SqlConnection sqlConnection)
                     {
-                        foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table.TableName))))
+                        using (Microsoft.Data.SqlClient.SqlTransaction transaction = sqlConnection.BeginTransaction())
                         {
-                            using (var command = new SqlCommand(commandSql, ((SqlConnection)existingConnection), transaction))
+                            foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table.TableName))))
                             {
-                                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                using (var command = new Microsoft.Data.SqlClient.SqlCommand(commandSql, sqlConnection, transaction))
+                                {
+                                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                }
+                                created = true;
                             }
-                            created = true;
-                        }
 
-                        transaction.Commit();
+                            transaction.Commit();
+                        }
+                    }
+                    else if (existingConnection is System.Data.SqlClient.SqlConnection systemSqlConnection)
+                    {
+                        using (System.Data.SqlClient.SqlTransaction transaction = systemSqlConnection.BeginTransaction())
+                        {
+                            foreach (var commandSql in sqlScripts.Where(sqlScript => !persistedTables.Any(table => sqlScript.Contains(table.TableName))))
+                            {
+                                using (var command = new System.Data.SqlClient.SqlCommand(commandSql, systemSqlConnection, transaction))
+                                {
+                                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                }
+                                created = true;
+                            }
+
+                            transaction.Commit();
+                        }
                     }
                 }
                 finally
@@ -167,14 +185,14 @@ namespace MiniProfiler.Initialization
             }
             else
             {
-                using (var connection = new SqlConnection(connectionString))
+                using (var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString))
                 {
                     await EnsureTablesDeletedAsync(connection, cancellationToken);
                 }
             }
         }
 
-        public static async Task EnsureTablesDeletedAsync(DbConnection existingConnection, CancellationToken cancellationToken = default)
+        public static async Task<bool> EnsureTablesDeletedAsync(DbConnection existingConnection, CancellationToken cancellationToken = default)
         {
             var commands = new List<String>();
             if (existingConnection is SqliteConnection)
@@ -201,12 +219,14 @@ namespace MiniProfiler.Initialization
                         commands.Add(commandSql);
                     }
 
+                    bool deleted = false;
                     try
                     {
                         using (SqliteTransaction transaction = ((SqliteConnection)existingConnection).BeginTransaction())
                         {
                             foreach (var commandSql in commands)
                             {
+                                deleted = true;
                                 using (var command = new SqliteCommand(commandSql, ((SqliteConnection)existingConnection), transaction))
                                 {
                                     await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -223,13 +243,15 @@ namespace MiniProfiler.Initialization
                             existingConnection.Close();
                         }
                     }
+
+                    return deleted;
                 }
                 else
                 {
-                    await EnsureDbDestroyedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
+                    return await EnsureDbDestroyedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
                 }
             }
-            else if (existingConnection is SqlConnection)
+            else if (existingConnection is Microsoft.Data.SqlClient.SqlConnection || existingConnection is System.Data.SqlClient.SqlConnection)
             {
                 bool dbExists = await DbInitializer.ExistsAsync(existingConnection, cancellationToken);
 
@@ -254,19 +276,40 @@ namespace MiniProfiler.Initialization
                         commands.Add(commandSql);
                     }
 
+                    bool deleted = false;
                     try
                     {
-                        using (SqlTransaction transaction = ((SqlConnection)existingConnection).BeginTransaction())
+                        if (existingConnection is Microsoft.Data.SqlClient.SqlConnection sqlConnection)
                         {
-                            foreach (var commandSql in commands)
+                            using (Microsoft.Data.SqlClient.SqlTransaction transaction = sqlConnection.BeginTransaction())
                             {
-                                using (var command = new SqlCommand(commandSql, ((SqlConnection)existingConnection), transaction))
+                                foreach (var commandSql in commands)
                                 {
-                                    await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                    deleted = true;
+                                    using (var command = new Microsoft.Data.SqlClient.SqlCommand(commandSql, sqlConnection, transaction))
+                                    {
+                                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                    }
                                 }
-                            }
 
-                            transaction.Commit();
+                                transaction.Commit();
+                            }
+                        }
+                        else if (existingConnection is System.Data.SqlClient.SqlConnection systemSqlConnection)
+                        {
+                            using (System.Data.SqlClient.SqlTransaction transaction = systemSqlConnection.BeginTransaction())
+                            {
+                                foreach (var commandSql in commands)
+                                {
+                                    deleted = true;
+                                    using (var command = new System.Data.SqlClient.SqlCommand(commandSql, systemSqlConnection, transaction))
+                                    {
+                                        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+                                    }
+                                }
+
+                                transaction.Commit();
+                            }
                         }
                     }
                     finally
@@ -276,10 +319,12 @@ namespace MiniProfiler.Initialization
                             existingConnection.Close();
                         }
                     }
+
+                    return deleted;
                 }
                 else
                 {
-                    await EnsureDbDestroyedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
+                   return await EnsureDbDestroyedAsync(existingConnection, cancellationToken).ConfigureAwait(false);
                 }
             }
             else

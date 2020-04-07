@@ -10,13 +10,13 @@
     <RepositoryUrl>https://github.com/davidikin45/MiniProfilerDb.Initialization</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>MiniProfiler Initialization</PackageTags>
-    <Version>1.0.8</Version>
+    <Version>1.0.9</Version>
     <PackageId>MiniProfilerDb.Initialization</PackageId>
     <Product>MiniProfilerDb.Initialization</Product>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Database.Initialization" Version="1.0.20" />
+    <PackageReference Include="Database.Initialization" Version="1.0.21" />
     <PackageReference Include="MiniProfiler.Providers.Sqlite" Version="4.1.0" />
     <PackageReference Include="MiniProfiler.Providers.SqlServer" Version="4.1.0" />
   </ItemGroup>
